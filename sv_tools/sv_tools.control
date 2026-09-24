@@ -2,4 +2,5 @@
 comment = 'Session variables for PostgreSQL (Oracle-style package variables)'
 default_version = '0.1'
 relocatable = true
+requires = ''
 

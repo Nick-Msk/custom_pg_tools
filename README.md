@@ -1,10 +1,19 @@
 # `custom_pg_tools`
 
-A collection of PostgreSQL extensions.
+[![License](https://img.shields.io/badge/license-PostgreSQL-blue.svg)](LICENSE)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791.svg)](https://www.postgresql.org/)
+[![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)](CHANGELOG.md)
+[![Status](https://img.shields.io/badge/status-experimental-orange.svg)](CHANGELOG.md)
+[![Made with SQL](https://img.shields.io/badge/made%20with-SQL%2FPLpgSQL-informational.svg)]()
+
+
+A collection of small, self-contained PostgreSQL extensions.
 
 ## Extensions
 
-* **sv_tools** — session variables, similar to Oracle package variables.
+| Extension  | Description                                                   | Version |
+|------------|---------------------------------------------------------------|---------|
+| `sv_tools` | Session variables, similar to Oracle package variables.       | 1.0.0   |
 
 ## Install
 
@@ -17,16 +26,20 @@ Then in your database:
 
 ```sql
 create extension sv_tools;
--- or into a specific schema:
-create extension sv_tools schema utils;
+-- or, recommended, into a dedicated schema:
+create schema sv;
+create extension sv_tools schema sv;
 ```
+
+See [DISCLAIMER.md](DISCLAIMER.md) before using in production.
 
 ## `sv_tools`
 
-Session-scoped typed variables. The value and its type live for the duration
-of a single connection. The type is fixed on the first `sv_set` call and
-cannot be changed without explicitly resetting the variable (or by passing
-`p_check_type => true`, which raises an error on type mismatch).
+Session-scoped typed variables. The value and its type live for the
+duration of a single connection. The type is fixed on the first
+`sv_set` call and cannot be changed without explicitly resetting the
+variable (or by passing `p_check_type => true`, which raises an error
+on a type mismatch).
 
 ### API
 
@@ -71,11 +84,40 @@ select sv_unset('user_id');             -- true
 
 ### Storage
 
-Data is kept in `pg_temp.sv_session_vars`, a temp table created lazily on the
-first `sv_set` call in the session with `on commit preserve rows`. It
-disappears automatically when the connection is closed.
+Data is kept in `pg_temp.sv_session_vars`, a temp table created lazily
+on the first `sv_set` call in the session with `on commit preserve rows`.
+It disappears automatically when the connection is closed.
+
+### Recommendations
+
+* Install the extension into a dedicated schema (e.g. `sv`) to keep
+  your `public` schema clean.
+* Use `set search_path` in the calling session or qualify calls
+  explicitly (`sv.sv_set(...)`).
+* Do not rely on session variables for anything that must survive a
+  reconnect. If a connection pooler reuses connections, remember to
+  `sv_reset()` at the start of a logical session.
+
+## Repository layout
+
+```
+custom_pg_tools/
+├── Makefile
+├── README.md
+├── CHANGELOG.md
+├── DISCLAIMER.md
+├── LICENSE
+└── sv_tools/
+    ├── Makefile
+    ├── sv_tools.control
+    ├── sv_tools--1.0.sql
+    └── test/
+        └── smoke.sql
+```
+
+Adding a new extension: create a subdirectory, add it to `SUBDIRS` in
+the top-level `Makefile`, done.
 
 ## License
 
-PostgreSQL License.
-
+PostgreSQL License. See [LICENSE](LICENSE).
