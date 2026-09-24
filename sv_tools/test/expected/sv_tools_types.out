@@ -14,10 +14,11 @@ select sv_set('t_int4', 42::int4);
 (1 row)
 
 select sv_getint('t_int4');
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('t_int4');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getint 
+-----------
+        42
+(1 row)
+
 -- int8
 select sv_set('t_int8', 9223372036854775807::int8);
        sv_set        
@@ -26,10 +27,11 @@ select sv_set('t_int8', 9223372036854775807::int8);
 (1 row)
 
 select sv_getbigint('t_int8');
-ERROR:  function sv_getbigint(unknown) is not unique
-LINE 1: select sv_getbigint('t_int8');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+    sv_getbigint     
+---------------------
+ 9223372036854775807
+(1 row)
+
 -- float8
 select sv_set('t_float8', 3.14159::float8);
  sv_set  
@@ -38,10 +40,11 @@ select sv_set('t_float8', 3.14159::float8);
 (1 row)
 
 select sv_getfloat('t_float8');
-ERROR:  function sv_getfloat(unknown) is not unique
-LINE 1: select sv_getfloat('t_float8');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getfloat 
+-------------
+     3.14159
+(1 row)
+
 -- numeric
 select sv_set('t_numeric', 12345.6789::numeric);
    sv_set   
@@ -50,10 +53,11 @@ select sv_set('t_numeric', 12345.6789::numeric);
 (1 row)
 
 select sv_getnum('t_numeric');
-ERROR:  function sv_getnum(unknown) is not unique
-LINE 1: select sv_getnum('t_numeric');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getnum  
+------------
+ 12345.6789
+(1 row)
+
 -- text
 select sv_set('t_text', 'hello world'::text);
    sv_set    
@@ -62,10 +66,11 @@ select sv_set('t_text', 'hello world'::text);
 (1 row)
 
 select sv_gettext('t_text');
-ERROR:  function sv_gettext(unknown) is not unique
-LINE 1: select sv_gettext('t_text');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_gettext  
+-------------
+ hello world
+(1 row)
+
 -- bool
 select sv_set('t_bool', true::boolean);
  sv_set 
@@ -74,10 +79,11 @@ select sv_set('t_bool', true::boolean);
 (1 row)
 
 select sv_getbool('t_bool');
-ERROR:  function sv_getbool(unknown) is not unique
-LINE 1: select sv_getbool('t_bool');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getbool 
+------------
+ t
+(1 row)
+
 -- jsonb
 select sv_set('t_jsonb', '{"a":1,"b":[2,3]}'::jsonb);
         sv_set         
@@ -86,10 +92,11 @@ select sv_set('t_jsonb', '{"a":1,"b":[2,3]}'::jsonb);
 (1 row)
 
 select sv_getjson('t_jsonb');
-ERROR:  function sv_getjson(unknown) is not unique
-LINE 1: select sv_getjson('t_jsonb');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+      sv_getjson       
+-----------------------
+ {"a": 1, "b": [2, 3]}
+(1 row)
+
 -- generic sv_get via type hint
 select * from sv_get('t_int4',  null::int4);
  sv_get 

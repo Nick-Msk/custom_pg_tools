@@ -191,94 +191,6 @@ end $$;
 /* public: sv_get*                                                         */
 /* ----------------------------------------------------------------------- */
 
-create function sv_getint(p_name text) returns int
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result int;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_int into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'int4'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_getbigint(p_name text) returns bigint
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result bigint;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_bigint into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'int8'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_getfloat(p_name text) returns double precision
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result double precision;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_float into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'float8'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_getnum(p_name text) returns numeric
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result numeric;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_num into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'numeric'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_gettext(p_name text) returns text
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result text;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_text into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'text'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_getbool(p_name text) returns boolean
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result boolean;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_bool into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'bool'::sv_regtype;
-    return v_result;
-end $$;
-
-create function sv_getjson(p_name text) returns jsonb
-language plpgsql stable
-set search_path = @extschema@, pg_temp as $$
-declare v_result jsonb;
-begin
-    if to_regclass('pg_temp.sv_session_vars') is null then return null; end if;
-    select var_value_json into v_result
-    from sv_session_vars
-    where var_name = p_name and var_type = 'jsonb'::sv_regtype;
-    return v_result;
-end $$;
-
-/* ----------------------------------------------------------------------- */
-/* public: sv_get (generic, type passed as a hint)                         */
-/* ----------------------------------------------------------------------- */
-
 create function sv_getint(p_name text, p_check_type boolean default false)
 returns int
 language plpgsql stable
@@ -390,6 +302,10 @@ begin
     end if;
     return v_result;
 end $$;
+
+/* ----------------------------------------------------------------------- */
+/* public: sv_get (generic, type passed as a hint)                         */
+/* ----------------------------------------------------------------------- */
 
 create function sv_get(p_name text, p_type anyelement, p_check_type boolean default false)
 returns setof anyelement

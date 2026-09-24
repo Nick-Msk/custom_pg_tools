@@ -14,10 +14,11 @@ select sv_set('x', 42);
 (1 row)
 
 select sv_getint('x');
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('x');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getint 
+-----------
+        42
+(1 row)
+
 -- 2. overwrite with another type (no check)
 select sv_set('x', 'hello');
  sv_set 
@@ -26,10 +27,11 @@ select sv_set('x', 'hello');
 (1 row)
 
 select sv_gettext('x');
-ERROR:  function sv_gettext(unknown) is not unique
-LINE 1: select sv_gettext('x');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_gettext 
+------------
+ hello
+(1 row)
+
 -- 3. null value keeps its type
 select sv_set('y', null::int);
  sv_set 
@@ -38,16 +40,18 @@ select sv_set('y', null::int);
 (1 row)
 
 select sv_getint('y');
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('y');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getint 
+-----------
+          
+(1 row)
+
 -- 4. wrong type read yields null
 select sv_gettext('y');
-ERROR:  function sv_gettext(unknown) is not unique
-LINE 1: select sv_gettext('y');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_gettext 
+------------
+ 
+(1 row)
+
 -- 5. check_type => true forbids reassignment
 select sv_set('z', 1, true);
  sv_set 
@@ -82,10 +86,11 @@ select sv_set('x', 42);
 (1 row)
 
 select sv_getint('x');              -- 42
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('x');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getint 
+-----------
+        42
+(1 row)
+
 select sv_getint('x', true);        -- 42
  sv_getint 
 -----------
@@ -93,18 +98,20 @@ select sv_getint('x', true);        -- 42
 (1 row)
 
 select sv_gettext('x');             -- null, silent
-ERROR:  function sv_gettext(unknown) is not unique
-LINE 1: select sv_gettext('x');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_gettext 
+------------
+ 
+(1 row)
+
 select sv_gettext('x', true);       -- error
 ERROR:  session variable "x" does not exist or is not text
 CONTEXT:  PL/pgSQL function sv_gettext(text,boolean) line 8 at RAISE
 select sv_getint('missing');        -- null, silent
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('missing');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ sv_getint 
+-----------
+          
+(1 row)
+
 select sv_getint('missing', true);  -- error
 ERROR:  session variable "missing" does not exist or is not int4
 CONTEXT:  PL/pgSQL function sv_getint(text,boolean) line 8 at RAISE

@@ -15,20 +15,26 @@ select count(*) from sv_list();
 
 -- 2. getters return null for missing variables
 select sv_getint('nope');
-ERROR:  function sv_getint(unknown) is not unique
-LINE 1: select sv_getint('nope');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ERROR:  relation "sv_session_vars" does not exist
+LINE 1: select var_value_int                   from sv_session_vars
+                                                    ^
+QUERY:  select var_value_int                   from sv_session_vars
+    where var_name = p_name and var_type = 'int4'::sv_regtype
+CONTEXT:  PL/pgSQL function sv_getint(text,boolean) line 4 at SQL statement
 select sv_gettext('nope');
-ERROR:  function sv_gettext(unknown) is not unique
-LINE 1: select sv_gettext('nope');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ERROR:  relation "sv_session_vars" does not exist
+LINE 1: select var_value_text                   from sv_session_vars
+                                                     ^
+QUERY:  select var_value_text                   from sv_session_vars
+    where var_name = p_name and var_type = 'text'::sv_regtype
+CONTEXT:  PL/pgSQL function sv_gettext(text,boolean) line 4 at SQL statement
 select sv_getbool('nope');
-ERROR:  function sv_getbool(unknown) is not unique
-LINE 1: select sv_getbool('nope');
-               ^
-HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+ERROR:  relation "sv_session_vars" does not exist
+LINE 1: select var_value_bool                   from sv_session_vars
+                                                     ^
+QUERY:  select var_value_bool                   from sv_session_vars
+    where var_name = p_name and var_type = 'bool'::sv_regtype
+CONTEXT:  PL/pgSQL function sv_getbool(text,boolean) line 4 at SQL statement
 select count(*) from sv_get('nope', null::int);
 ERROR:  relation "sv_session_vars" does not exist
 LINE 1: select var_value_int from sv_session_vars where var_name = $...

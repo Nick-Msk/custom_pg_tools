@@ -25,6 +25,9 @@ _nothing yet_
 * Lazy storage in `pg_temp.sv_session_vars` (`on commit preserve rows`).
 * Relocatable extension: installable into any schema chosen by the user.
 * Internal functions are pinned with `set search_path = @extschema@, pg_temp`.
+* Added `p_check_type` parameter to all `sv_get*` functions; when `true`,
+  a missing variable or a type mismatch raises an exception instead of
+  silently returning NULL.
 
 [Unreleased]: https://github.com/Nick-Msk/custom_pg_tools/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Nick-Msk/custom_pg_tools/releases/tag/v0.1.0
