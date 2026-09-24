@@ -95,6 +95,20 @@ in different schemas has **not been tested** and is **not supported**.
 If you need session variables in multiple schemas, install the extension
 once and call it via the schema-qualified name from wherever you need it.
 
+## Schema is fixed after install
+
+`sv_tools` is declared as `relocatable = false`. The schema is chosen at
+`create extension sv_tools schema <name>` time and cannot be changed later
+with `alter extension sv_tools set schema <other>`. This is a consequence of
+using `@extschema@` in the SQL source, which the server substitutes only for
+non-relocatable extensions.
+
+To move the extension to another schema, drop and recreate it:
+
+```sql
+drop extension sv_tools;
+create extension sv_tools schema new_schema;
+
 ## Data loss
 
 All session variables are lost when the connection closes, and are not

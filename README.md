@@ -6,7 +6,6 @@
 [![Status](https://img.shields.io/badge/status-experimental-orange.svg)](CHANGELOG.md)
 [![Made with SQL](https://img.shields.io/badge/made%20with-SQL%2FPLpgSQL-informational.svg)]()
 
-
 A collection of small, self-contained PostgreSQL extensions.
 
 ## Extensions
@@ -41,6 +40,90 @@ duration of a single connection. The type is fixed on the first
 variable (or by passing `p_check_type => true`, which raises an error
 on a type mismatch).
 
+### API
+
+Setters (return the value that was set):
+
+```
+sv_set(name, value)              -- int4, int8, float8, numeric, text, bool, jsonb
+sv_set(name, value, check_type)  -- raise error if the type differs
+```
+
+Typed getters (return NULL when the variable is missing or the type
+does not match, unless `check_type` is `true`):
+
+```
+sv_getint(name [, check_type])    -> int
+sv_getbigint(name [, check_type]) -> bigint
+sv_getfloat(name [, check_type])  -> double precision
+sv_getnum(name [, check_type])    -> numeric
+sv_gettext(name [, check_type])   -> text
+sv_getbool(name [, check_type])   -> boolean
+sv_getjson(name [, check_type])   -> jsonb
+```
+
+Generic getter (type is passed as a hint, `NULL::type`):
+
+```
+sv_get(name, hint [, check_type]) -> setof anyelement
+```
+
+Admin helpers (always tolerant to an empty session):
+
+```
+sv_list()          -- list all session variables
+sv_unset(name)     -- drop one variable, returns boolean
+sv_reset()         -- drop all variables in this session
+```
+
+### Behaviour matrix for getters
+
+| Situation                              | `check_type = false` (default) | `check_type = true` |
+|----------------------------------------|--------------------------------|---------------------|
+| Variable exists, value present         | return value                   | return value        |
+| Variable exists, value is NULL         | NULL                           | NULL                |
+| Variable missing or type does not match| NULL (silent)                  | `ERROR`             |
+| Temp table does not exist yet          | `ERROR: relation ... does not exist` | same |
+
+Calling a getter without a prior `sv_set` in the session is considered a
+programming error and fails. Admin helpers (`sv_list`, `sv_unset`,
+`sv_reset`) keep working on an empty session and return empty results.
+
+### Example
+
+```sql
+select sv_set('user_id', 42);
+select sv_getint('user_id');               -- 42
+select sv_get('user_id', NULL::int);       -- 42
+
+select sv_gettext('user_id');              -- NULL, silent
+select sv_gettext('user_id', true);        -- ERROR: not text
+
+select sv_set('user_id', 'oops', true);    -- ERROR: cannot reassign
+select sv_unset('user_id');                -- true
+```
+
+### Storage
+
+Data is kept in `pg_temp.sv_session_vars`, a temp table created lazily
+on the first `sv_set` call in the session with `on commit preserve rows`.
+It disappears automatically when the connection is closed.
+
+### Recommendations
+
+* Install the extension into a dedicated schema (e.g. `sv`) to keep
+  your `public` schema clean.
+* Use `set search_path` in the calling session or qualify calls
+  explicitly (`sv.sv_set(...)`).
+* Do not rely on session variables for anything that must survive a
+  reconnect. If a connection pooler reuses connections, remember to
+  `sv_reset()` at the start of a logical session.
+* Install `sv_tools` **once per database**. See
+  [DISCLAIMER.md](DISCLAIMER.md#one-installation-per-database) for the
+  reasoning.
+* The schema is fixed at `create extension sv_tools schema <name>` time
+  and cannot be changed later with `alter extension ... set schema`.
+
 ## Comparison with `pg_variables`
 
 [`pg_variables`](https://github.com/postgrespro/pg_variables) by Postgres
@@ -66,11 +149,13 @@ the cost of features.
 ### When to pick which
 
 **Pick `pg_variables` if you need:**
+
 * record or array variables,
 * transactional variables that respect `begin` / `commit` / `rollback`,
 * a battle-tested extension maintained by Postgres Professional.
 
 **Pick `sv_tools` if you:**
+
 * want zero build toolchain — no compiler, no headers, no `.so`,
 * prefer to read and modify the entire implementation in an afternoon,
 * only need scalar variables of common types,
@@ -79,63 +164,6 @@ the cost of features.
 `sv_tools` is not a replacement for `pg_variables`. It is a smaller,
 simpler alternative for cases where the full feature set of
 `pg_variables` is overkill and the C toolchain is a burden.
-
-### API
-
-Setters (return the value that was set):
-
-```
-sv_set(name, value)              -- int4, int8, float8, numeric, text, bool, jsonb
-sv_set(name, value, check_type)  -- raise error if the type differs
-```
-
-Getters (return NULL when the variable is missing or the type does not match):
-
-```
-sv_getint(name)    -> int
-sv_getbigint(name) -> bigint
-sv_getfloat(name)  -> double precision
-sv_getnum(name)    -> numeric
-sv_gettext(name)   -> text
-sv_getbool(name)   -> boolean
-sv_getjson(name)   -> jsonb
-sv_get(name, hint) -> setof anyelement   -- hint is NULL::type
-```
-
-Admin:
-
-```
-sv_list()          -- list all session variables
-sv_unset(name)     -- drop one variable, returns boolean
-sv_reset()         -- drop all variables in this session
-```
-
-### Example
-
-```sql
-select sv_set('user_id', 42);
-select sv_getint('user_id');           -- 42
-select sv_get('user_id', NULL::int);   -- 42
-
-select sv_set('user_id', 'oops', true); -- error: cannot reassign
-select sv_unset('user_id');             -- true
-```
-
-### Storage
-
-Data is kept in `pg_temp.sv_session_vars`, a temp table created lazily
-on the first `sv_set` call in the session with `on commit preserve rows`.
-It disappears automatically when the connection is closed.
-
-### Recommendations
-
-* Install the extension into a dedicated schema (e.g. `sv`) to keep
-  your `public` schema clean.
-* Use `set search_path` in the calling session or qualify calls
-  explicitly (`sv.sv_set(...)`).
-* Do not rely on session variables for anything that must survive a
-  reconnect. If a connection pooler reuses connections, remember to
-  `sv_reset()` at the start of a logical session.
 
 ## Repository layout
 
@@ -151,12 +179,43 @@ custom_pg_tools/
     ├── sv_tools.control
     ├── sv_tools--0.1.sql
     └── test/
-        └── smoke.sql
+        ├── sql/
+        │   ├── sv_tools.sql
+        │   ├── sv_tools_types.sql
+        │   ├── sv_tools_loops.sql
+        │   └── sv_tools_admin.sql
+        └── expected/
+            ├── sv_tools.out
+            ├── sv_tools_types.out
+            ├── sv_tools_loops.out
+            └── sv_tools_admin.out
 ```
 
 Adding a new extension: create a subdirectory, add it to `SUBDIRS` in
 the top-level `Makefile`, done.
 
+## Tests
+
+Regression tests use the standard `pg_regress` infrastructure shipped
+with PostgreSQL.
+
+```bash
+cd sv_tools
+make installcheck
+```
+
+Expected output:
+
+```
+ok 1     - sv_tools
+ok 2     - sv_tools_types
+ok 3     - sv_tools_loops
+ok 4     - sv_tools_admin
+1..4
+# All 4 tests passed.
+```
+
 ## License
 
 PostgreSQL License. See [LICENSE](LICENSE).
+
