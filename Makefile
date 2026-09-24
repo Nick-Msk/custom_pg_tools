@@ -11,3 +11,10 @@ install:
 clean:
 	@for d in $(SUBDIRS); do $(MAKE) -C $$d clean   || exit 1; done
 
+installcheck:
+	@for d in $(SUBDIRS); do $(MAKE) -C $$d installcheck || exit 1; done
+
+installcheck-clean:
+	psql -d postgres -c "drop database if exists contrib_regression" || true
+	$(MAKE) installcheck
+

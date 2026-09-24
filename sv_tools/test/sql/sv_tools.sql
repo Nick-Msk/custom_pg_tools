@@ -1,37 +1,34 @@
--- TODO: remove that ----
+-- sv_tools regression: basic single-variable behaviour
+
+set client_min_messages = warning;
 drop extension if exists sv_tools cascade;
 drop schema if exists sv cascade;
+reset client_min_messages;
 
-create schema if not exists sv;
-create extension if not exists sv_tools schema sv;
-
+create schema sv;
+create extension sv_tools schema sv;
 set search_path = sv, public;
--- END --
 
-
--- Basic
+-- 1. set/get int
 select sv_set('x', 42);
 select sv_getint('x');
 
--- Change type
+-- 2. overwrite with another type (no check)
 select sv_set('x', 'hello');
 select sv_gettext('x');
 
--- typed NULL
-select sv_set('y', NULL::int);
+-- 3. null value keeps its type
+select sv_set('y', null::int);
 select sv_getint('y');
 
--- incorrect type
+-- 4. wrong type read yields null
 select sv_gettext('y');
 
--- check_type => true
+-- 5. check_type => true forbids reassignment
 select sv_set('z', 1, true);
-select sv_set('z', 'oops', true);   -- exception
+select sv_set('z', 'oops', true);   -- error expected
 
--- print list
-select var_name, var_type, var_value sv_list();
-
--- remove
-select sv_unset('x');
-select sv_reset();
+-- 6. unset return values
+select sv_unset('z');   -- true
+select sv_unset('z');   -- false, already gone
 

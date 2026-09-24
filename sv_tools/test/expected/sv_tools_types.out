@@ -1,0 +1,139 @@
+-- sv_tools regression: all seven supported types
+set client_min_messages = warning;
+drop extension if exists sv_tools cascade;
+drop schema if exists sv cascade;
+reset client_min_messages;
+create schema sv;
+create extension sv_tools schema sv;
+set search_path = sv, public;
+-- int4
+select sv_set('t_int4', 42::int4);
+ sv_set 
+--------
+     42
+(1 row)
+
+select sv_getint('t_int4');
+ sv_getint 
+-----------
+        42
+(1 row)
+
+-- int8
+select sv_set('t_int8', 9223372036854775807::int8);
+       sv_set        
+---------------------
+ 9223372036854775807
+(1 row)
+
+select sv_getbigint('t_int8');
+    sv_getbigint     
+---------------------
+ 9223372036854775807
+(1 row)
+
+-- float8
+select sv_set('t_float8', 3.14159::float8);
+ sv_set  
+---------
+ 3.14159
+(1 row)
+
+select sv_getfloat('t_float8');
+ sv_getfloat 
+-------------
+     3.14159
+(1 row)
+
+-- numeric
+select sv_set('t_numeric', 12345.6789::numeric);
+   sv_set   
+------------
+ 12345.6789
+(1 row)
+
+select sv_getnum('t_numeric');
+ sv_getnum  
+------------
+ 12345.6789
+(1 row)
+
+-- text
+select sv_set('t_text', 'hello world'::text);
+   sv_set    
+-------------
+ hello world
+(1 row)
+
+select sv_gettext('t_text');
+ sv_gettext  
+-------------
+ hello world
+(1 row)
+
+-- bool
+select sv_set('t_bool', true::boolean);
+ sv_set 
+--------
+ t
+(1 row)
+
+select sv_getbool('t_bool');
+ sv_getbool 
+------------
+ t
+(1 row)
+
+-- jsonb
+select sv_set('t_jsonb', '{"a":1,"b":[2,3]}'::jsonb);
+        sv_set         
+-----------------------
+ {"a": 1, "b": [2, 3]}
+(1 row)
+
+select sv_getjson('t_jsonb');
+      sv_getjson       
+-----------------------
+ {"a": 1, "b": [2, 3]}
+(1 row)
+
+-- generic sv_get via type hint
+select * from sv_get('t_int4',  null::int4);
+ sv_get 
+--------
+     42
+(1 row)
+
+select * from sv_get('t_text',  null::text);
+   sv_get    
+-------------
+ hello world
+(1 row)
+
+select * from sv_get('t_jsonb', null::jsonb);
+        sv_get         
+-----------------------
+ {"a": 1, "b": [2, 3]}
+(1 row)
+
+-- wrong hint returns no rows
+select * from sv_get('t_int4', null::text);
+ sv_get 
+--------
+(0 rows)
+
+-- all seven visible via sv_list
+select var_name, var_type, var_value from sv_list()
+where var_name like 't\_%'
+order by var_name;
+ var_name  |     var_type     |       var_value       
+-----------+------------------+-----------------------
+ t_bool    | boolean          | true
+ t_float8  | double precision | 3.14159
+ t_int4    | integer          | 42
+ t_int8    | bigint           | 9223372036854775807
+ t_jsonb   | jsonb            | {"a": 1, "b": [2, 3]}
+ t_numeric | numeric          | 12345.6789
+ t_text    | text             | "hello world"
+(7 rows)
+

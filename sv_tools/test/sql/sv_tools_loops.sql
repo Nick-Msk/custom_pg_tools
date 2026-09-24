@@ -1,0 +1,56 @@
+-- sv_tools regression: loops and bulk operations
+
+set client_min_messages = warning;
+drop extension if exists sv_tools cascade;
+drop schema if exists sv cascade;
+reset client_min_messages;
+
+create schema sv;
+create extension sv_tools schema sv;
+set search_path = sv, public;
+
+-- 1. create 100 int variables in a loop
+do $$
+begin
+    for i in 1..100 loop
+        perform sv_set('loop_' || i, i * 10);
+    end loop;
+end $$;
+
+select sv_getint('loop_1'), sv_getint('loop_50'), sv_getint('loop_100');
+select count(*) from sv_list() where var_name like 'loop\_%';
+
+-- 2. mixed types side by side
+do $$
+begin
+    for i in 1..10 loop
+        perform sv_set('mix_i_' || i, i);
+        perform sv_set('mix_t_' || i, 'val_' || i);
+        perform sv_set('mix_b_' || i, i % 2 = 0);
+    end loop;
+end $$;
+
+select sv_getint('mix_i_5'),
+       sv_gettext('mix_t_5'),
+       sv_getbool('mix_b_5');
+select count(*) from sv_list() where var_name like 'mix\_%';
+
+-- 3. delete every even variable
+do $$
+begin
+    for i in 1..100 loop
+        if i % 2 = 0 then
+            perform sv_unset('loop_' || i);
+        end if;
+    end loop;
+end $$;
+
+select count(*) from sv_list() where var_name like 'loop\_%';
+select sv_getint('loop_1');
+select sv_getint('loop_2');   -- null, was deleted
+
+-- 4. wipe the slate
+select sv_reset();
+select count(*) from sv_list();
+
+

@@ -1,0 +1,120 @@
+-- sv_tools regression: admin helpers and edge cases
+set client_min_messages = warning;
+drop extension if exists sv_tools cascade;
+drop schema if exists sv cascade;
+reset client_min_messages;
+create schema sv;
+create extension sv_tools schema sv;
+set search_path = sv, public;
+-- 1. empty list before anything is set
+select count(*) from sv_list();
+ count 
+-------
+     0
+(1 row)
+
+-- 2. getters return null for missing variables
+select sv_getint('nope');
+ sv_getint 
+-----------
+          
+(1 row)
+
+select sv_gettext('nope');
+ sv_gettext 
+------------
+ 
+(1 row)
+
+select sv_getbool('nope');
+ sv_getbool 
+------------
+ 
+(1 row)
+
+select count(*) from sv_get('nope', null::int);
+ count 
+-------
+     0
+(1 row)
+
+-- 3. unset on a missing variable
+select sv_unset('nope');
+ sv_unset 
+----------
+ f
+(1 row)
+
+-- 4. populate a few and inspect
+select sv_set('a', 1);
+ sv_set 
+--------
+      1
+(1 row)
+
+select sv_set('b', 'two');
+ sv_set 
+--------
+ two
+(1 row)
+
+select sv_set('c', true);
+ sv_set 
+--------
+ t
+(1 row)
+
+select var_name, var_type, var_value from sv_list()
+where var_name in ('a','b','c')
+order by var_name;
+ var_name | var_type | var_value 
+----------+----------+-----------
+ a        | integer  | 1
+ b        | text     | "two"
+ c        | boolean  | true
+(3 rows)
+
+-- 5. unset one by one
+select sv_unset('a');
+ sv_unset 
+----------
+ t
+(1 row)
+
+select count(*) from sv_list() where var_name in ('a','b','c');
+ count 
+-------
+     2
+(1 row)
+
+select sv_unset('b');
+ sv_unset 
+----------
+ t
+(1 row)
+
+select sv_unset('c');
+ sv_unset 
+----------
+ t
+(1 row)
+
+select count(*) from sv_list();
+ count 
+-------
+     0
+(1 row)
+
+-- 6. reset on empty is a no-op
+select sv_reset();
+ sv_reset 
+----------
+ 
+(1 row)
+
+select count(*) from sv_list();
+ count 
+-------
+     0
+(1 row)
+

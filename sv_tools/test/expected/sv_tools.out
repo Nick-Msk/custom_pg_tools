@@ -1,7 +1,12 @@
-create schema if not exists sv;
-create extension if not exists sv_tools schema sv;
+-- sv_tools regression: basic single-variable behaviour
+set client_min_messages = warning;
+drop extension if exists sv_tools cascade;
+drop schema if exists sv cascade;
+reset client_min_messages;
+create schema sv;
+create extension sv_tools schema sv;
 set search_path = sv, public;
--- Basic
+-- 1. set/get int
 select sv_set('x', 42);
  sv_set 
 --------
@@ -14,7 +19,7 @@ select sv_getint('x');
         42
 (1 row)
 
--- Change type
+-- 2. overwrite with another type (no check)
 select sv_set('x', 'hello');
  sv_set 
 --------
@@ -27,8 +32,8 @@ select sv_gettext('x');
  hello
 (1 row)
 
--- typed NULL
-select sv_set('y', NULL::int);
+-- 3. null value keeps its type
+select sv_set('y', null::int);
  sv_set 
 --------
        
@@ -40,41 +45,36 @@ select sv_getint('y');
           
 (1 row)
 
--- incorrect type
+-- 4. wrong type read yields null
 select sv_gettext('y');
  sv_gettext 
 ------------
  
 (1 row)
 
--- check_type => true
+-- 5. check_type => true forbids reassignment
 select sv_set('z', 1, true);
  sv_set 
 --------
       1
 (1 row)
 
-select sv_set('z', 'oops', true);   -- exception
+select sv_set('z', 'oops', true);   -- error expected
 ERROR:  session variable "z" is already integer, cannot reassign as text
 CONTEXT:  PL/pgSQL function sv__set(text,sv_regtype,integer,bigint,double precision,numeric,text,boolean,jsonb,boolean) line 13 at RAISE
 SQL statement "SELECT sv__set(p_name, 'text'::sv_regtype,
                     p_value_text := p_value, p_check_type := p_check_type)"
 PL/pgSQL function sv_set(text,text,boolean) line 3 at PERFORM
--- print list
-select var_name, var_type, var_value sv_list();
-ERROR:  syntax error at or near "("
-LINE 1: select var_name, var_type, var_value sv_list();
-                                                    ^
--- remove
-select sv_unset('x');
+-- 6. unset return values
+select sv_unset('z');   -- true
  sv_unset 
 ----------
  t
 (1 row)
 
-select sv_reset();
- sv_reset 
+select sv_unset('z');   -- false, already gone
+ sv_unset 
 ----------
- 
+ f
 (1 row)
 
