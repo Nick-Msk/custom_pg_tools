@@ -13,7 +13,7 @@ A collection of small, self-contained PostgreSQL extensions.
 
 | Extension  | Description                                                   | Version |
 |------------|---------------------------------------------------------------|---------|
-| `sv_tools` | Session variables, similar to Oracle package variables.       | 1.0.0   |
+| `sv_tools` | Session variables, similar to Oracle package variables.       | 0.1.0   |
 
 ## Install
 
@@ -110,7 +110,7 @@ custom_pg_tools/
 └── sv_tools/
     ├── Makefile
     ├── sv_tools.control
-    ├── sv_tools--1.0.sql
+    ├── sv_tools--0.1.sql
     └── test/
         └── smoke.sql
 ```
