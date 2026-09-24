@@ -66,6 +66,35 @@ To avoid surprises:
 * Never store secrets (passwords, tokens) in session variables longer
   than strictly necessary.
 
+## One installation per database
+
+Install `sv_tools` **once per database**. Do not install it into multiple
+schemas of the same database in parallel:
+
+```sql
+-- do this
+create schema sv;
+create extension sv_tools schema sv;
+
+-- do NOT do this in the same database
+create schema sv2;
+create extension sv_tools schema sv2;   -- will share state with the first one
+```
+
+The extension stores its data in a single temporary table named
+`pg_temp.sv_session_vars`. This table is created lazily on the first
+`sv_set` call, and its name is **not** prefixed with the extension schema.
+As a result, two installations of `sv_tools` in different schemas of the
+same database will operate on the same underlying state: a variable set
+through `sv2.sv_set('x', 1)` will be visible to `sv.sv_getint('x')` and
+vice versa.
+
+This is a known limitation of the current version. Parallel installation
+in different schemas has **not been tested** and is **not supported**.
+
+If you need session variables in multiple schemas, install the extension
+once and call it via the schema-qualified name from wherever you need it.
+
 ## Data loss
 
 All session variables are lost when the connection closes, and are not
