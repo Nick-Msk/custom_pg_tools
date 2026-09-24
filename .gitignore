@@ -1,0 +1,14 @@
+*.o
+*.so
+*.bc
+*.a
+results/
+regression.*
+regression.diffs
+regression.out
+tmp_check/
+pg_*.log
+*.swp
+.*.un~
+*~
+
