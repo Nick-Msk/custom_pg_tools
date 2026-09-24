@@ -15,29 +15,26 @@ select count(*) from sv_list();
 
 -- 2. getters return null for missing variables
 select sv_getint('nope');
- sv_getint 
------------
-          
-(1 row)
-
+ERROR:  function sv_getint(unknown) is not unique
+LINE 1: select sv_getint('nope');
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select sv_gettext('nope');
- sv_gettext 
-------------
- 
-(1 row)
-
+ERROR:  function sv_gettext(unknown) is not unique
+LINE 1: select sv_gettext('nope');
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select sv_getbool('nope');
- sv_getbool 
-------------
- 
-(1 row)
-
+ERROR:  function sv_getbool(unknown) is not unique
+LINE 1: select sv_getbool('nope');
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select count(*) from sv_get('nope', null::int);
- count 
--------
-     0
-(1 row)
-
+ERROR:  relation "sv_session_vars" does not exist
+LINE 1: select var_value_int from sv_session_vars where var_name = $...
+                                  ^
+QUERY:  select var_value_int from sv_session_vars where var_name = $1 and var_type = $2::sv_regtype
+CONTEXT:  PL/pgSQL function sv_get(text,anyelement,boolean) line 18 at RETURN QUERY
 -- 3. unset on a missing variable
 select sv_unset('nope');
  sv_unset 

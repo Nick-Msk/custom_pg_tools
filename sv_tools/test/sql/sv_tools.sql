@@ -32,3 +32,16 @@ select sv_set('z', 'oops', true);   -- error expected
 select sv_unset('z');   -- true
 select sv_unset('z');   -- false, already gone
 
+-- getters with p_check_type
+select sv_set('x', 42);
+select sv_getint('x');              -- 42
+select sv_getint('x', true);        -- 42
+select sv_gettext('x');             -- null, silent
+select sv_gettext('x', true);       -- error
+select sv_getint('missing');        -- null, silent
+select sv_getint('missing', true);  -- error
+
+-- null value is fine
+select sv_set('y', null::int);
+select sv_getint('y', true);        -- null, no error
+

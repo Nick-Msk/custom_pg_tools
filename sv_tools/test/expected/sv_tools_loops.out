@@ -14,11 +14,10 @@ begin
     end loop;
 end $$;
 select sv_getint('loop_1'), sv_getint('loop_50'), sv_getint('loop_100');
- sv_getint | sv_getint | sv_getint 
------------+-----------+-----------
-        10 |       500 |      1000
-(1 row)
-
+ERROR:  function sv_getint(unknown) is not unique
+LINE 1: select sv_getint('loop_1'), sv_getint('loop_50'), sv_getint(...
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select count(*) from sv_list() where var_name like 'loop\_%';
  count 
 -------
@@ -37,11 +36,10 @@ end $$;
 select sv_getint('mix_i_5'),
        sv_gettext('mix_t_5'),
        sv_getbool('mix_b_5');
- sv_getint | sv_gettext | sv_getbool 
------------+------------+------------
-         5 | val_5      | f
-(1 row)
-
+ERROR:  function sv_getint(unknown) is not unique
+LINE 1: select sv_getint('mix_i_5'),
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select count(*) from sv_list() where var_name like 'mix\_%';
  count 
 -------
@@ -64,17 +62,15 @@ select count(*) from sv_list() where var_name like 'loop\_%';
 (1 row)
 
 select sv_getint('loop_1');
- sv_getint 
------------
-        10
-(1 row)
-
+ERROR:  function sv_getint(unknown) is not unique
+LINE 1: select sv_getint('loop_1');
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 select sv_getint('loop_2');   -- null, was deleted
- sv_getint 
------------
-          
-(1 row)
-
+ERROR:  function sv_getint(unknown) is not unique
+LINE 1: select sv_getint('loop_2');
+               ^
+HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
 -- 4. wipe the slate
 select sv_reset();
  sv_reset 

@@ -279,7 +279,119 @@ end $$;
 /* public: sv_get (generic, type passed as a hint)                         */
 /* ----------------------------------------------------------------------- */
 
-create function sv_get(p_name text, p_type anyelement)
+create function sv_getint(p_name text, p_check_type boolean default false)
+returns int
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result int;
+begin
+    select var_value_int into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'int4'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not int4', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_getbigint(p_name text, p_check_type boolean default false)
+returns bigint
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result bigint;
+begin
+    select var_value_bigint into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'int8'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not int8', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_getfloat(p_name text, p_check_type boolean default false)
+returns double precision
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result double precision;
+begin
+    select var_value_float into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'float8'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not float8', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_getnum(p_name text, p_check_type boolean default false)
+returns numeric
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result numeric;
+begin
+    select var_value_num into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'numeric'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not numeric', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_gettext(p_name text, p_check_type boolean default false)
+returns text
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result text;
+begin
+    select var_value_text into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'text'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not text', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_getbool(p_name text, p_check_type boolean default false)
+returns boolean
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result boolean;
+begin
+    select var_value_bool into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'bool'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not bool', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_getjson(p_name text, p_check_type boolean default false)
+returns jsonb
+language plpgsql stable
+set search_path = @extschema@, pg_temp as $$
+declare v_result jsonb;
+begin
+    select var_value_json into v_result
+    from sv_session_vars
+    where var_name = p_name and var_type = 'jsonb'::sv_regtype;
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist or is not jsonb', p_name
+            using errcode = 'datatype_mismatch';
+    end if;
+    return v_result;
+end $$;
+
+create function sv_get(p_name text, p_type anyelement, p_check_type boolean default false)
 returns setof anyelement
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -299,16 +411,19 @@ begin
         when 'jsonb'::sv_regtype   then 'var_value_json'
     end;
 
-    if to_regclass('pg_temp.sv_session_vars') is null then
-        return;
-    end if;
-
     return query execute format(
         'select %I from sv_session_vars '
         'where var_name = $1 and var_type = $2::sv_regtype',
         v_col
     ) using p_name, v_typ;
+
+    if not found and p_check_type then
+        raise exception 'session variable "%" does not exist',
+            p_name
+            using errcode = 'datatype_mismatch';
+    end if;
 end $$;
+
 
 /* ----------------------------------------------------------------------- */
 /* public: sv_list, sv_unset, sv_reset                                     */
