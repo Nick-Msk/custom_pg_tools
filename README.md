@@ -41,6 +41,45 @@ duration of a single connection. The type is fixed on the first
 variable (or by passing `p_check_type => true`, which raises an error
 on a type mismatch).
 
+## Comparison with `pg_variables`
+
+[`pg_variables`](https://github.com/postgrespro/pg_variables) by Postgres
+Professional solves a similar problem — session-scoped variables — and is
+more feature-rich. `sv_tools` takes a different trade-off: minimalism at
+the cost of features.
+
+| | `pg_variables` | `sv_tools` |
+|---|---|---|
+| Implementation language | C | SQL / PL/pgSQL |
+| Build requirements | C compiler, `make`, headers | none |
+| Test requirements | `make installcheck`, Valgrind for memory checks | `make installcheck` |
+| Ships as | `.so` shared library + SQL | SQL only |
+| Supported types | scalar, `record`, `array` | 7 scalar types (`int4`, `int8`, `float8`, `numeric`, `text`, `bool`, `jsonb`) |
+| Transactional variables | yes (opt-in via `is_transactional` flag) | no |
+| Record variables | yes (`pgv_insert`, `pgv_get` on records) | no |
+| Array variables | yes | no |
+| Installation | `make USE_PGXS=1 && make USE_PGXS=1 install` | `make && make install` |
+| Runtime dependency | compiled `.so` matching PG version and ABI | none |
+| Lines of C code | substantial | 0 |
+| Lines of SQL | a wrapper around C | ~400 |
+
+### When to pick which
+
+**Pick `pg_variables` if you need:**
+* record or array variables,
+* transactional variables that respect `begin` / `commit` / `rollback`,
+* a battle-tested extension maintained by Postgres Professional.
+
+**Pick `sv_tools` if you:**
+* want zero build toolchain — no compiler, no headers, no `.so`,
+* prefer to read and modify the entire implementation in an afternoon,
+* only need scalar variables of common types,
+* want to install by simply running `psql -f sv_tools--0.1.sql`.
+
+`sv_tools` is not a replacement for `pg_variables`. It is a smaller,
+simpler alternative for cases where the full feature set of
+`pg_variables` is overkill and the C toolchain is a burden.
+
 ### API
 
 Setters (return the value that was set):
