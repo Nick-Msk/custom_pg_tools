@@ -122,3 +122,27 @@ Association. Oracle is a registered trademark of Oracle Corporation.
 Any references to Oracle are for descriptive purposes only and do not
 imply affiliation or endorsement.
 
+## Temp table is not in the extension schema
+
+The storage table `sv_session_vars` lives in the session-local schema
+`pg_temp_N`, not in the schema where the extension itself is installed.
+This is inherent to the design: `create temp table` always puts the
+table in a per-session namespace, regardless of the current
+`search_path`.
+
+Consequences:
+
+* `\dt <extension_schema>.*` does **not** show the data.
+* Dumping the extension schema with `pg_dump -n <extension_schema>`
+  will not include any session variables (which is correct — they are
+  ephemeral).
+* Accessing the table directly from outside the extension is
+  discouraged; use `sv_list()` instead.
+
+To inspect the raw table from `psql`:
+
+```
+\dt `pg_temp_`*.*
+select * from `pg_temp.sv_session_vars`;
+```
+

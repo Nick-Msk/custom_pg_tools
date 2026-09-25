@@ -105,9 +105,57 @@ select sv_unset('user_id');                -- true
 
 ### Storage
 
-Data is kept in `pg_temp.sv_session_vars`, a temp table created lazily
-on the first `sv_set` call in the session with `on commit preserve rows`.
-It disappears automatically when the connection is closed.
+Session variables live in a temporary table called
+`pg_temp.sv_session_vars`, created lazily on the first `sv_set` call in
+a session with `on commit preserve rows`. It disappears automatically
+when the connection closes.
+
+The temp table lives in the session-local schema `pg_temp_N` (the alias
+`pg_temp` works in SQL but **not** in psql meta-commands). To inspect it
+from `psql`:
+
+```
+\dt pg_temp_*.*
+```
+
+```
+                                          List of tables
+  Schema   |      Name       | Type  | Owner  | Persistence | Access method | Size  | Description
+-----------+-----------------+-------+--------+-------------+---------------+-------+-------------
+ pg_temp_6 | sv_session_vars | table | skelet | temporary   | heap          | 16 kB |
+(1 row)
+```
+
+Or, more conveniently, use the extension's own helper:
+
+```sql
+select * from sv.sv_list();
+```
+
+Note that the temp table lives in `pg_temp_N`, **not** in the schema you
+installed the extension into. `\dt <your_schema>.*` will only show the
+functions and the domain — the data itself is in the session-local
+schema.
+
+### Session lifetime
+
+The temp table exists only in the session that created it. If you open
+a new `psql` connection, the table is gone:
+
+```sql
+-- session 1
+select sv.sv_set('x', 1);
+select sv.sv_getint('x');       -- 1
+\q
+
+-- session 2
+select sv.sv_list();            -- empty
+select sv.sv_getint('x');       -- ERROR: relation "sv_session_vars" does not exist
+```
+
+This is by design: variables are session-scoped and are not meant to
+survive reconnects. If you use a connection pooler, remember to call
+`sv_reset()` at the start of each logical session.
 
 ### Recommendations
 
