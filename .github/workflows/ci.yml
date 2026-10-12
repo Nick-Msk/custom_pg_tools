@@ -48,7 +48,7 @@ jobs:
 
       - name: Install extension
         working-directory: sv_tools
-        run: sudo make install
+        run: sudo --preserve-env=PG_CONFIG make install
 
       - name: Run regression tests
         working-directory: sv_tools
