@@ -11,13 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* Initial release of `analyst_func`.
-* `median(numeric)` aggregate: exact numeric median, supports `group by`,
-  window usage, and moving window frames (`rows between ... and ...`).
-* Moving-aggregate implementation via inverse transition that advances
-  a skip counter in O(1).
-* Regression tests covering odd/even counts, NULLs, empty sets,
-  duplicates, `group by`, `over ()`, and moving frames.
+  * `analyst_func` extension with `median(numeric)` aggregate.
+  * Exact numeric arithmetic, no float drift.
+  * Works as aggregate and as window function.
+  * Ignores NULLs; returns NULL for empty and all-NULL input.
+  * Moving window frames (`rows between ... and ...`) supported via
+    inverse transition with O(1) skip counter.
+  * `combinefunc` provided, so the aggregate is parallel safe.
+  * Regression tests: odd/even counts, NULLs, empty sets, duplicates,
+    `group by`, `over ()`, moving frames.
+  * Stress benchmark under `bench/stress.sql`, invoked via
+    `make stress CNT=N`.
 
 ## [0.1.0] - 2026-09-24
 
