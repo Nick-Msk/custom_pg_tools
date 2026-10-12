@@ -34,16 +34,13 @@ jobs:
             postgresql-${{ matrix.pg }} \
             postgresql-server-dev-${{ matrix.pg }}
 
-      - name: Build extension
-        working-directory: sv_tools
+      - name: Build extensions
         run: make
 
-      - name: Install extension
-        working-directory: sv_tools
+      - name: Install extensions
         run: sudo --preserve-env=PG_CONFIG make install
 
       - name: Run regression tests
-        working-directory: sv_tools
         run: |
-          make installcheck || { cat regression.diffs; exit 1; }
+          make installcheck || { cat sv_tools/regression.diffs analyst_func/regression.diffs; exit 1; }
 
