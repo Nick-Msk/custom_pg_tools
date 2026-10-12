@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Initial release of `analyst_func`.
-* `median(numeric)` and `median(double precision)` aggregates.
-  Both ignore NULLs and also work as window functions.
+* `median(numeric)` aggregate: exact numeric median, supports `group by`,
+  window usage, and moving window frames (`rows between ... and ...`).
+* Moving-aggregate implementation via inverse transition that advances
+  a skip counter in O(1).
 * Regression tests covering odd/even counts, NULLs, empty sets,
-  duplicates, `group by`, and window usage.
+  duplicates, `group by`, `over ()`, and moving frames.
 
 ## [0.1.0] - 2026-09-24
 
