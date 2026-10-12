@@ -14,6 +14,7 @@ A collection of small, self-contained PostgreSQL extensions.
 | Extension  | Description                                                   | Version |
 |------------|---------------------------------------------------------------|---------|
 | `sv_tools` | Session variables, similar to Oracle package variables.       | 0.1.0   |
+| `analyst_func` | Analytical functions, starting with `median()`.           | 0.1.0   |
 
 ## Install
 
@@ -172,6 +173,42 @@ survive reconnects. If you use a connection pooler, remember to call
   reasoning.
 * The schema is fixed at `create extension sv_tools schema <name>` time
   and cannot be changed later with `alter extension ... set schema`.
+
+## `analyst_func`
+
+Analytical functions that PostgreSQL does not ship in core.
+
+### `median()`
+
+Returns the median of a numeric set, ignoring NULLs. Works as an
+aggregate and as a window function. Two overloads: `numeric` (exact)
+and `double precision` (floating point).
+
+```sql
+select median(x) from (values (1.0), (2.0), (3.0), (4.0)) as t(x);
+-- 2.5
+
+select g, median(x)
+from (values ('a', 1.0), ('a', 2.0), ('a', 3.0),
+             ('b', 10.0), ('b', 20.0)) as t(g, x)
+group by g order by g;
+-- a | 2
+-- b | 15
+
+select g, x, median(x) over (partition by g)
+from (values ('a', 1.0), ('a', 2.0), ('a', 3.0)) as t(g, x);
+```
+
+For exact results use `numeric` columns; integer columns are promoted
+to `double precision` automatically. If you want integer medians as
+`numeric`, cast explicitly: `median(x::numeric)`.
+
+### Installation
+
+```sql
+create schema af;
+create extension analyst_func schema af;
+```
 
 ## Comparison with `pg_variables`
 

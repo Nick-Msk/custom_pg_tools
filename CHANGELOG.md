@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_nothing yet_
+## [0.1.0] - 2026-10-12
+
+### Added
+
+* Initial release of `analyst_func`.
+* `median(numeric)` and `median(double precision)` aggregates.
+  Both ignore NULLs and also work as window functions.
+* Regression tests covering odd/even counts, NULLs, empty sets,
+  duplicates, `group by`, and window usage.
 
 ## [0.1.0] - 2026-09-24
 

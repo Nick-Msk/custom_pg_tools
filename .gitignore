@@ -1,13 +1,26 @@
-*.o
-*.so
-*.bc
-*.a
+# regression test artifacts
 results/
 regression.*
 regression.diffs
 regression.out
 tmp_check/
+
+# pg_regress temp instance (log/, postmaster.pid, etc.)
+log/
+postmaster.pid
+postmaster.opts
+
+# PostgreSQL logs
 pg_*.log
+*.log
+
+# build artifacts
+*.o
+*.so
+*.bc
+*.a
+
+# editor
 *.swp
 .*.un~
 *~
