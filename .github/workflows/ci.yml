@@ -34,14 +34,6 @@ jobs:
             postgresql-${{ matrix.pg }} \
             postgresql-server-dev-${{ matrix.pg }}
 
-      - name: Start PostgreSQL
-        run: |
-          sudo systemctl start postgresql
-          sudo -u postgres psql -c "select version();"
-
-      - name: Create superuser for current OS user
-        run: sudo -u postgres createuser -s "$(id -un)" || true
-
       - name: Build extension
         working-directory: sv_tools
         run: make
