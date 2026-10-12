@@ -57,7 +57,7 @@ comment on function @extschema@.sv__ensure_table() is
 
 create function @extschema@.sv__set(
     p_name         text,
-    p_type         sv_regtype,
+    p_type         @extschema@.sv_regtype,
     p_value_int    int              default null,
     p_value_bigint bigint           default null,
     p_value_float  double precision default null,
@@ -348,7 +348,7 @@ end $$;
 create function @extschema@.sv_list()
 returns table (
     var_name   text,
-    var_type   sv_regtype,
+    var_type   @extschema@.sv_regtype,
     var_value  jsonb,
     updated_at timestamptz
 )
