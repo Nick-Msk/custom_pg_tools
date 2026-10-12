@@ -46,3 +46,38 @@ select g, x, median(x) over (partition by g)
 from (values ('a', 1::numeric), ('a', 2), ('a', 3)) as t(g, x)
 order by g, x;
 
+-- 11. moving window frame — sanity check
+with t(x) as (
+    values (1::numeric), (2), (3), (4), (5), (6), (7)
+)
+select
+    x,
+    median(x) over (
+        order by x
+        rows between 2 preceding and current row
+    ) as m3
+from t
+order by x;
+
+-- 11. moving window frame
+with t(x) as (
+    values (1::numeric), (2), (3), (4), (5), (6), (7)
+)
+select x, median(x) over (
+    order by x
+    rows between 2 preceding and current row
+) as m3
+from t
+order by x;
+
+-- 12. moving window with NULLs
+with t(x) as (
+    values (1::numeric), (null), (3), (null), (5)
+)
+select x, median(x) over (
+    order by x nulls last
+    rows between 2 preceding and current row
+) as m3
+from t
+order by x nulls last;
+

@@ -3,52 +3,124 @@
 \echo Use "create extension analyst_func" to load this file. \quit
 
 /* ======================================================================= */
-/* median(numeric)                                                         */
+/* state type and helpers                                                  */
 /* ======================================================================= */
 
+create type @extschema@.median_state as (
+    vals numeric[],
+    skip int
+);
+
+comment on type @extschema@.median_state is
+    'analyst_func: internal state for median(numeric)';
+
 create function @extschema@.median_trans(
-    state numeric[],
+    state @extschema@.median_state,
     val   numeric
-) returns numeric[]
-language plpgsql immutable strict parallel safe
+) returns @extschema@.median_state
+language plpgsql immutable
 as $$
 begin
     if state is null then
-        return array[val];
+        return row(array[val], 0)::@extschema@.median_state;
     end if;
-    return array_append(state, val);
+    state.vals := state.vals || val;
+    return state;
 end $$;
 
-comment on function @extschema@.median_trans(numeric[], numeric) is
-    'analyst_func: internal transition function for median(numeric)';
+comment on function @extschema@.median_trans(@extschema@.median_state, numeric) is
+    'analyst_func: internal transition; appends, including NULLs';
+
+create function @extschema@.median_minvfunc(
+    state @extschema@.median_state,
+    val   numeric
+) returns @extschema@.median_state
+language plpgsql immutable
+as $$
+begin
+    if state is null then
+        return state;
+    end if;
+    state.skip := coalesce(state.skip, 0) + 1;
+    return state;
+end $$;
+
+comment on function @extschema@.median_minvfunc(@extschema@.median_state, numeric) is
+    'analyst_func: internal inverse transition; advances skip counter';
 
 create function @extschema@.median_final(
-    state numeric[]
+    state @extschema@.median_state
 ) returns numeric
-language sql immutable strict parallel safe
+language plpgsql immutable
 as $$
-    with sorted as (
-        select array(select x from unnest(state) as x order by x) as a,
-               array_length(state, 1) as n
-    )
+declare
+    active numeric[];
+    n      int;
+begin
+    if state is null or state.vals is null then
+        return null;
+    end if;
+
+    active := state.vals[
+        coalesce(state.skip, 0) + 1 :
+        coalesce(array_length(state.vals, 1), 0)
+    ];
+
+    active := array(
+        select x
+        from unnest(active) as x
+        where x is not null
+        order by x
+    );
+
+    n := coalesce(array_length(active, 1), 0);
+    if n = 0 then
+        return null;
+    end if;
+
+    if n % 2 = 1 then
+        return active[(n + 1) / 2];
+    else
+        return trim_scale((active[n / 2] + active[n / 2 + 1]) / 2);
+    end if;
+end $$;
+
+comment on function @extschema@.median_final(@extschema@.median_state) is
+    'analyst_func: internal final; slices active window and computes median';
+
+create function @extschema@.median_combine(
+    s1 @extschema@.median_state,
+    s2 @extschema@.median_state
+) returns @extschema@.median_state
+language sql immutable
+as $$
     select case
-        when n is null then null
-        when n % 2 = 1 then a[(n + 1) / 2]
-        else trim_scale( (a[n / 2] + a[n / 2 + 1]) / 2)
+        when s1 is null then s2
+        when s2 is null then s1
+        else row(
+            coalesce(s1.vals, '{}'::numeric[]) ||
+            coalesce(s2.vals, '{}'::numeric[]),
+            0
+        )::@extschema@.median_state
     end
-    from sorted
 $$;
 
-comment on function @extschema@.median_final(numeric[]) is
-    'analyst_func: internal final function for median(numeric)';
+comment on function @extschema@.median_combine(@extschema@.median_state, @extschema@.median_state) is
+    'analyst_func: internal combine; assumes skip = 0 (parallel GROUP BY only)';
+
 
 create aggregate @extschema@.median(numeric) (
-    sfunc     = @extschema@.median_trans,
-    stype     = numeric[],
-    initcond  = '{}',
-    finalfunc = @extschema@.median_final,
-    parallel  = safe
+    sfunc       = @extschema@.median_trans,
+    stype       = @extschema@.median_state,
+    msfunc      = @extschema@.median_trans,
+    minvfunc    = @extschema@.median_minvfunc,
+    mstype      = @extschema@.median_state,
+    mfinalfunc  = @extschema@.median_final,
+    combinefunc = @extschema@.median_combine,
+    finalfunc   = @extschema@.median_final,
+    parallel    = safe
 );
 
 comment on aggregate @extschema@.median(numeric) is
-    'analyst_func: median value, ignoring NULLs; exact numeric arithmetic';
+    'analyst_func: median of numeric values, supports moving window frames';
+
