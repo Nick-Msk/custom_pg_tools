@@ -39,6 +39,9 @@ jobs:
           sudo systemctl start postgresql
           sudo -u postgres psql -c "select version();"
 
+      - name: Create superuser for current OS user
+        run: sudo -u postgres createuser -s "$(id -un)" || true
+
       - name: Build extension
         working-directory: sv_tools
         run: make
@@ -47,11 +50,8 @@ jobs:
         working-directory: sv_tools
         run: sudo make install
 
-      - name: Prepare workspace for postgres user
-        run: sudo chown -R postgres:postgres $GITHUB_WORKSPACE
-
       - name: Run regression tests
         working-directory: sv_tools
         run: |
-          sudo -u postgres make installcheck || { cat regression.diffs; exit 1; }
+          make installcheck || { cat regression.diffs; exit 1; }
 
