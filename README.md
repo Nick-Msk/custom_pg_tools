@@ -289,12 +289,6 @@ using `actions/checkout@v5` and `--temp-instance` for isolated testing.
 ```bash
 cd sv_tools
 make install
-
-psql -d <db>
-create schema sv;
-create extension sv_tools schema sv;
-
-
 make installcheck
 ```
 
