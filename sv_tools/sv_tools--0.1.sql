@@ -6,7 +6,7 @@
 /* domain: only the types we support                                       */
 /* ----------------------------------------------------------------------- */
 
-create @extschema@domain sv_regtype as regtype
+create domain @extschema@.sv_regtype as regtype
 constraint sv_regtype_supported check (
     value in (
         'int4'::regtype,
@@ -19,14 +19,14 @@ constraint sv_regtype_supported check (
     )
 );
 
-comment on domain sv_regtype is
+comment on domain @extschema@.sv_regtype is
     'sv_tools: supported data types for session variables';
 
 /* ----------------------------------------------------------------------- */
 /* internal: lazily create the temp table                                  */
 /* ----------------------------------------------------------------------- */
 
-create @extschema@function sv__ensure_table()
+create function @extschema@.sv__ensure_table()
 returns void
 language plpgsql
 set search_path = @extschema@, pg_temp
@@ -48,14 +48,14 @@ begin
     end if;
 end $$;
 
-comment on function @extschema@sv__ensure_table() is
+comment on function @extschema@.sv__ensure_table() is
     'sv_tools: internal - lazily create pg_temp.sv_session_vars';
 
 /* ----------------------------------------------------------------------- */
 /* internal: write implementation                                          */
 /* ----------------------------------------------------------------------- */
 
-create function @extschema@sv__set(
+create function @extschema@.sv__set(
     p_name         text,
     p_type         sv_regtype,
     p_value_int    int              default null,
@@ -109,7 +109,7 @@ begin
         updated_at       = now();
 end $$;
 
-comment on function @extschema@sv__set(text, sv_regtype, int, bigint, double precision,
+comment on function @extschema@.sv__set(text, sv_regtype, int, bigint, double precision,
                              numeric, text, boolean, jsonb, boolean) is
     'sv_tools: internal - writes a typed session variable';
 
@@ -117,7 +117,7 @@ comment on function @extschema@sv__set(text, sv_regtype, int, bigint, double pre
 /* public: sv_set                                                          */
 /* ----------------------------------------------------------------------- */
 
-create function @extschema@sv_set(p_name text, p_value int,
+create function @extschema@.sv_set(p_name text, p_value int,
                        p_check_type boolean default false)
 returns int language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -127,7 +127,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value bigint,
+create function @extschema@.sv_set(p_name text, p_value bigint,
                        p_check_type boolean default false)
 returns bigint language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -137,7 +137,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value double precision,
+create function @extschema@.sv_set(p_name text, p_value double precision,
                        p_check_type boolean default false)
 returns double precision language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -147,7 +147,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value numeric,
+create function @extschema@.sv_set(p_name text, p_value numeric,
                        p_check_type boolean default false)
 returns numeric language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -157,7 +157,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value text,
+create function @extschema@.sv_set(p_name text, p_value text,
                        p_check_type boolean default false)
 returns text language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -167,7 +167,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value boolean,
+create function @extschema@.sv_set(p_name text, p_value boolean,
                        p_check_type boolean default false)
 returns boolean language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -177,7 +177,7 @@ begin
     return p_value;
 end $$;
 
-create function @extschema@sv_set(p_name text, p_value jsonb,
+create function @extschema@.sv_set(p_name text, p_value jsonb,
                        p_check_type boolean default false)
 returns jsonb language plpgsql
 set search_path = @extschema@, pg_temp as $$
@@ -191,7 +191,7 @@ end $$;
 /* public: sv_get*                                                         */
 /* ----------------------------------------------------------------------- */
 
-create function @extschema@sv_getint(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getint(p_name text, p_check_type boolean default false)
 returns int
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -207,7 +207,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_getbigint(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getbigint(p_name text, p_check_type boolean default false)
 returns bigint
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -223,7 +223,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_getfloat(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getfloat(p_name text, p_check_type boolean default false)
 returns double precision
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -239,7 +239,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_getnum(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getnum(p_name text, p_check_type boolean default false)
 returns numeric
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -255,7 +255,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_gettext(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_gettext(p_name text, p_check_type boolean default false)
 returns text
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -271,7 +271,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_getbool(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getbool(p_name text, p_check_type boolean default false)
 returns boolean
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -287,7 +287,7 @@ begin
     return v_result;
 end $$;
 
-create function @extschema@sv_getjson(p_name text, p_check_type boolean default false)
+create function @extschema@.sv_getjson(p_name text, p_check_type boolean default false)
 returns jsonb
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -307,7 +307,7 @@ end $$;
 /* public: sv_get (generic, type passed as a hint)                         */
 /* ----------------------------------------------------------------------- */
 
-create function @extschema@sv_get(p_name text, p_type anyelement, p_check_type boolean default false)
+create function @extschema@.sv_get(p_name text, p_type anyelement, p_check_type boolean default false)
 returns setof anyelement
 language plpgsql stable
 set search_path = @extschema@, pg_temp as $$
@@ -345,7 +345,7 @@ end $$;
 /* public: sv_list, sv_unset, sv_reset                                     */
 /* ----------------------------------------------------------------------- */
 
-create function @extschema@sv_list()
+create function @extschema@.sv_list()
 returns table (
     var_name   text,
     var_type   sv_regtype,
@@ -376,7 +376,7 @@ begin
     order by v.var_name;
 end $$;
 
-create function @extschema@sv_unset(p_name text) returns boolean
+create function @extschema@.sv_unset(p_name text) returns boolean
 language plpgsql
 set search_path = @extschema@, pg_temp as $$
 begin
@@ -387,7 +387,7 @@ begin
     return found;
 end $$;
 
-create function @extschema@sv_reset() returns void
+create function @extschema@.sv_reset() returns void
 language plpgsql
 set search_path = @extschema@, pg_temp as $$
 begin
