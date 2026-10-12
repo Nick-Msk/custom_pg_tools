@@ -5,6 +5,7 @@
 [![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)](CHANGELOG.md)
 [![Status](https://img.shields.io/badge/status-experimental-orange.svg)](CHANGELOG.md)
 [![Made with SQL](https://img.shields.io/badge/made%20with-SQL%2FPLpgSQL-informational.svg)]()
+[![CI](https://github.com/Nick-Msk/custom_pg_tools/actions/workflows/ci.yml/badge.svg)](https://github.com/Nick-Msk/custom_pg_tools/actions/workflows/ci.yml)
 
 A collection of small, self-contained PostgreSQL extensions.
 
