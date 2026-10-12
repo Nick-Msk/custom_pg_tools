@@ -246,10 +246,18 @@ the top-level `Makefile`, done.
 ## Tests
 
 Regression tests use the standard `pg_regress` infrastructure shipped
-with PostgreSQL.
+with PostgreSQL. The CI pipeline runs tests on PostgreSQL 14 through 18
+using `actions/checkout@v5` and `--temp-instance` for isolated testing.
 
 ```bash
 cd sv_tools
+make install
+
+psql -d <db>
+create schema sv;
+create extension sv_tools schema sv;
+
+
 make installcheck
 ```
 

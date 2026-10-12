@@ -18,7 +18,7 @@ jobs:
       PG_CONFIG: /usr/lib/postgresql/${{ matrix.pg }}/bin/pg_config
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install PostgreSQL ${{ matrix.pg }}
         run: |
