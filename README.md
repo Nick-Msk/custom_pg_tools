@@ -229,6 +229,21 @@ precision` precision is acceptable, or plan a C extension with an
 Moving window frames use a skip counter and are **O(1)** per removed
 row, so they behave better than the plain path.
 
+For reference, the same data through the built-in
+`percentile_cont(0.5) within group (order by x)` on `double precision`:
+
+| rows   | `median(numeric)` | `percentile_cont` |
+|--------|-------------------|-------------------|
+| 10 000 | 115 ms            | 0.73 ms           |
+| 40 000 | 1.75 s            | 2.8 ms            |
+| 160 000| 8.0 s             | 12 ms             |
+| 640 000| 53 s              | 56 ms             |
+
+The ratio grows with size because `median` is O(n²) in the number of
+rows per group, while `percentile_cont` is linear. The SQL version
+trades speed for exact `numeric` arithmetic. For `double precision`
+input, prefer the built-in `percentile_cont`.
+
 ### Benchmark
 
 ```
@@ -288,25 +303,37 @@ custom_pg_tools/
 ├── CHANGELOG.md
 ├── DISCLAIMER.md
 ├── LICENSE
-└── sv_tools/
+├── sv_tools/
+│   ├── Makefile
+│   ├── sv_tools.control
+│   ├── sv_tools--0.1.sql
+│   └── test/
+│       ├── sql/
+│       │   ├── sv_tools.sql
+│       │   ├── sv_tools_types.sql
+│       │   ├── sv_tools_loops.sql
+│       │   └── sv_tools_admin.sql
+│       └── expected/
+│           ├── sv_tools.out
+│           ├── sv_tools_types.out
+│           ├── sv_tools_loops.out
+│           └── sv_tools_admin.out
+└── analyst_func/
     ├── Makefile
-    ├── sv_tools.control
-    ├── sv_tools--0.1.sql
+    ├── analyst_func.control
+    ├── analyst_func--0.1.sql
+    ├── bench/
+    │   └── stress.sql
     └── test/
         ├── sql/
-        │   ├── sv_tools.sql
-        │   ├── sv_tools_types.sql
-        │   ├── sv_tools_loops.sql
-        │   └── sv_tools_admin.sql
+        │   └── analyst_func.sql
         └── expected/
-            ├── sv_tools.out
-            ├── sv_tools_types.out
-            ├── sv_tools_loops.out
-            └── sv_tools_admin.out
+            └── analyst_func.out
 ```
 
-Adding a new extension: create a subdirectory, add it to `SUBDIRS` in
-the top-level `Makefile`, done.
+Adding a new extension: create a subdirectory with its own
+`Makefile`, `.control`, and `--0.1.sql` files, add the directory to
+`SUBDIRS` in the top-level `Makefile`, done.
 
 ## Tests
 
