@@ -7,8 +7,9 @@
 /* ======================================================================= */
 
 create type @extschema@.median_state as (
-    vals numeric[],
-    skip int
+    vals numeric[],   -- capacity >= pos-1, хвост может быть NULL
+    pos  int,         -- следующий индекс для записи (занято: 1..pos-1)
+    skip int          -- сколько элементов в начале уже вне окна
 );
 
 comment on type @extschema@.median_state is
@@ -20,11 +21,25 @@ create function @extschema@.median_trans(
 ) returns @extschema@.median_state
 language plpgsql immutable
 as $$
+declare
+    cap     int;
+    new_cap int;
 begin
     if state is null then
-        return row(array[val], 0)::@extschema@.median_state;
+        state.vals := array_fill(null::numeric, array[16]);
+        state.pos  := 1;
+        state.skip := 0;
     end if;
-    state.vals := state.vals || val;
+
+    cap := coalesce(array_length(state.vals, 1), 0);
+    if state.pos > cap then
+        new_cap := greatest(cap * 2, 16);
+        state.vals := state.vals
+                   || array_fill(null::numeric, array[new_cap - cap]);
+    end if;
+
+    state.vals[state.pos] := val;
+    state.pos := state.pos + 1;
     return state;
 end $$;
 
@@ -57,18 +72,20 @@ declare
     active numeric[];
     n      int;
 begin
-    if state is null or state.vals is null then
+    if state is null
+       or state.vals is null
+       or state.pos is null
+       or state.pos <= 1 then
         return null;
     end if;
 
     active := state.vals[
         coalesce(state.skip, 0) + 1 :
-        coalesce(array_length(state.vals, 1), 0)
+        state.pos - 1
     ];
 
     active := array(
-        select x
-        from unnest(active) as x
+        select x from unnest(active) as x
         where x is not null
         order by x
     );
@@ -81,7 +98,7 @@ begin
     if n % 2 = 1 then
         return active[(n + 1) / 2];
     else
-        return trim_scale((active[n / 2] + active[n / 2 + 1]) / 2);
+        return (active[n / 2] + active[n / 2 + 1]) / 2;
     end if;
 end $$;
 
@@ -92,18 +109,24 @@ create function @extschema@.median_combine(
     s1 @extschema@.median_state,
     s2 @extschema@.median_state
 ) returns @extschema@.median_state
-language sql immutable
+language plpgsql immutable
 as $$
-    select case
-        when s1 is null then s2
-        when s2 is null then s1
-        else row(
-            coalesce(s1.vals, '{}'::numeric[]) ||
-            coalesce(s2.vals, '{}'::numeric[]),
-            0
-        )::@extschema@.median_state
-    end
-$$;
+declare
+    a numeric[];
+    b numeric[];
+    r @extschema@.median_state;
+begin
+    if s1 is null then return s2; end if;
+    if s2 is null then return s1; end if;
+
+    a := s1.vals[1 : s1.pos - 1];
+    b := s2.vals[1 : s2.pos - 1];
+
+    r.vals := a || b;
+    r.pos  := coalesce(array_length(r.vals, 1), 0) + 1;
+    r.skip := 0;
+    return r;
+end $$;
 
 comment on function @extschema@.median_combine(@extschema@.median_state, @extschema@.median_state) is
     'analyst_func: internal combine; assumes skip = 0 (parallel GROUP BY only)';
