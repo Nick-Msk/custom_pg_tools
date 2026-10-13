@@ -19,7 +19,7 @@ create function @extschema@.median_trans(
     state @extschema@.median_state,
     val   numeric
 ) returns @extschema@.median_state
-language plpgsql immutable
+language plpgsql immutable parallel safe
 as $$
 declare
     cap     int;
@@ -50,7 +50,7 @@ create function @extschema@.median_minvfunc(
     state @extschema@.median_state,
     val   numeric
 ) returns @extschema@.median_state
-language plpgsql immutable
+language plpgsql immutable parallel safe
 as $$
 begin
     if state is null then
@@ -66,7 +66,7 @@ comment on function @extschema@.median_minvfunc(@extschema@.median_state, numeri
 create function @extschema@.median_final(
     state @extschema@.median_state
 ) returns numeric
-language plpgsql immutable
+language plpgsql immutable parallel safe
 as $$
 declare
     active numeric[];
@@ -109,7 +109,7 @@ create function @extschema@.median_combine(
     s1 @extschema@.median_state,
     s2 @extschema@.median_state
 ) returns @extschema@.median_state
-language plpgsql immutable
+language plpgsql immutable parallel safe
 as $$
 declare
     a numeric[];
