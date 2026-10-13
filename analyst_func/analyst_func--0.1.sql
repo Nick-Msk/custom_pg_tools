@@ -98,7 +98,7 @@ begin
     if n % 2 = 1 then
         return active[(n + 1) / 2];
     else
-        return (active[n / 2] + active[n / 2 + 1]) / 2;
+        return trim_scale((active[n / 2] + active[n / 2 + 1]) / 2);
     end if;
 end $$;
 
