@@ -9,6 +9,15 @@
 
 A collection of small, self-contained PostgreSQL extensions.
 
+Two independent extensions live side by side:
+
+* **`sv_tools`** — session-scoped typed variables for SQL/PLpgSQL.
+* **`analyst_func`** — exact `median(numeric)` aggregate with moving
+  window support.
+
+They share nothing except the build infrastructure and can be installed
+independently.
+
 ## Extensions
 
 | Extension  | Description                                                   | Version |
@@ -26,10 +35,13 @@ sudo make install
 Then in your database:
 
 ```sql
-create extension sv_tools;
--- or, recommended, into a dedicated schema:
+-- session variables
 create schema sv;
 create extension sv_tools schema sv;
+
+-- analytical functions
+create schema af;
+create extension analyst_func schema af;
 ```
 
 See [DISCLAIMER.md](DISCLAIMER.md) before using in production.
@@ -207,21 +219,24 @@ create extension analyst_func schema af;
 
 ### Performance
 
-The plain (non-moving) implementation accumulates the whole group in
-an array and sorts it once in the final function. Array append copies
-the array on every step, so the transition function has **O(n²)**
-behaviour in the number of rows per group.
+The plain (non-moving) implementation stores the whole group in an
+array inside a composite state and sorts it once in the final function.
+Array append copies the entire array on every transition step, so the
+transition function has **O(n²)** behaviour in the number of rows per
+group. Marking the aggregate `parallel safe` lets PostgreSQL spread the
+work across workers when the input exceeds the parallel scan threshold,
+which improves the constant factor but does not change the asymptotic.
 
 Approximate timings on a single-modern-core machine:
 
 | rows per group | full median |
 |----------------|-------------|
-| 10 000         | 0.12 s      |
-| 40 000         | 1.8 s       |
-| 160 000        | 27 s        |
-| 640 000        | 59 s        |
+| 10 000         | 51 ms       |
+| 40 000         | 0.74 s      |
+| 160 000        | 2.9 s       |
+| 640 000        | 22.7 s      |
 
-For groups of 10 000–50 000 rows the implementation is practical. For
+For groups of 10 000–100 000 rows the implementation is practical. For
 millions of rows per group, use `percentile_cont(0.5)` if `double
 precision` precision is acceptable, or plan a C extension with an
 `internal`-typed state.
@@ -232,12 +247,12 @@ row, so they behave better than the plain path.
 For reference, the same data through the built-in
 `percentile_cont(0.5) within group (order by x)` on `double precision`:
 
-| rows   | `median(numeric)` | `percentile_cont` |
-|--------|-------------------|-------------------|
-| 10 000 | 115 ms            | 0.73 ms           |
-| 40 000 | 1.75 s            | 2.8 ms            |
-| 160 000| 8.0 s             | 12 ms             |
-| 640 000| 53 s              | 56 ms             |
+| rows    | `median(numeric)` | `percentile_cont` | ratio |
+|---------|-------------------|-------------------|-------|
+| 10 000  | 51 ms             | 0.74 ms           | 69×   |
+| 40 000  | 0.74 s            | 2.9 ms            | 254×  |
+| 160 000 | 2.9 s             | 12.8 ms           | 225×  |
+| 640 000 | 22.7 s            | 58.8 ms           | 386×  |
 
 The ratio grows with size because `median` is O(n²) in the number of
 rows per group, while `percentile_cont` is linear. The SQL version
@@ -339,15 +354,24 @@ Adding a new extension: create a subdirectory with its own
 
 Regression tests use the standard `pg_regress` infrastructure shipped
 with PostgreSQL. The CI pipeline runs tests on PostgreSQL 14 through 18
-using `actions/checkout@v5` and `--temp-instance` for isolated testing.
+using `actions/checkout@v5` and isolated temp instances.
+
+Run all tests from the repository root:
 
 ```bash
-cd sv_tools
-make install
+make
+sudo make install
 make installcheck
 ```
 
-Expected output:
+Or per extension:
+
+```bash
+cd sv_tools
+make installcheck
+```
+
+Expected for `sv_tools`:
 
 ```
 ok 1     - sv_tools
@@ -356,6 +380,22 @@ ok 3     - sv_tools_loops
 ok 4     - sv_tools_admin
 1..4
 # All 4 tests passed.
+```
+
+Expected for `analyst_func`:
+
+```
+ok 1     - analyst_func
+1..1
+# All 1 test passed.
+```
+
+Stress benchmarks are not part of `installcheck`; run them explicitly:
+
+```bash
+cd analyst_func
+make stress CNT=6     # doubles from 10K up to 640K
+make stress CNT=7     # up to 1.024M
 ```
 
 ## License
